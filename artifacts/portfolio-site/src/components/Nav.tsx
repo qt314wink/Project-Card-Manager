@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Palette, Home, Layers } from "lucide-react";
+import { Palette, Home, Layers, Moon, Sun, Menu, X } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -7,8 +9,30 @@ const navLinks = [
   { href: "/projects", label: "Projects", icon: Layers },
 ];
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <div className="w-8 h-8" />;
+
+  const isDark = theme === "dark";
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      aria-label="Toggle theme"
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
+}
+
 export default function Nav() {
   const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => setMenuOpen(false), [location]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -20,7 +44,7 @@ export default function Nav() {
           <span>Studio</span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden sm:flex items-center gap-1">
           {navLinks.map(({ href, label }) => {
             const isActive = href === "/" ? location === "/" : location.startsWith(href);
             return (
@@ -37,8 +61,43 @@ export default function Nav() {
               </Link>
             );
           })}
+          <div className="ml-2 pl-2 border-l border-border">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        <div className="flex sm:hidden items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <div className="sm:hidden border-t border-border bg-background px-4 py-3 flex flex-col gap-1">
+          {navLinks.map(({ href, label, icon: Icon }) => {
+            const isActive = href === "/" ? location === "/" : location.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </nav>
   );
 }

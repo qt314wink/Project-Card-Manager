@@ -1,5 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight, Sparkles, Layers, Palette } from "lucide-react";
+import { motion } from "framer-motion";
+import { useRef, useEffect } from "react";
 
 const projects = [
   {
@@ -9,7 +11,7 @@ const projects = [
     href: "/paint-swirl",
     tags: ["Interactive", "Physics", "Canvas"],
     gradient: "from-purple-500 via-pink-500 to-rose-500",
-    accent: "bg-purple-100 text-purple-700",
+    accent: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
     emoji: "🌀",
     svgPattern: "swirl",
   },
@@ -20,7 +22,7 @@ const projects = [
     href: "/projects",
     tags: ["Gallery", "Portfolio", "Design"],
     gradient: "from-blue-500 via-cyan-500 to-teal-500",
-    accent: "bg-blue-100 text-blue-700",
+    accent: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     emoji: "🎨",
     svgPattern: "grid",
   },
@@ -31,7 +33,7 @@ const projects = [
     href: "/projects?filter=experiments",
     tags: ["Generative", "Art", "Code"],
     gradient: "from-amber-500 via-orange-500 to-red-500",
-    accent: "bg-amber-100 text-amber-700",
+    accent: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     emoji: "✨",
     svgPattern: "dots",
   },
@@ -42,7 +44,7 @@ const projects = [
     href: "/projects?filter=motion",
     tags: ["Animation", "Motion", "Physics"],
     gradient: "from-green-500 via-emerald-500 to-teal-500",
-    accent: "bg-green-100 text-green-700",
+    accent: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
     emoji: "🎬",
     svgPattern: "waves",
   },
@@ -53,7 +55,7 @@ const projects = [
     href: "/projects?filter=tools",
     tags: ["Tools", "Dev", "Utilities"],
     gradient: "from-slate-500 via-gray-500 to-zinc-500",
-    accent: "bg-slate-100 text-slate-700",
+    accent: "bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300",
     emoji: "🔧",
     svgPattern: "circuit",
   },
@@ -64,7 +66,7 @@ const projects = [
     href: "/projects?filter=type",
     tags: ["Typography", "Color", "Design"],
     gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
-    accent: "bg-violet-100 text-violet-700",
+    accent: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
     emoji: "🔤",
     svgPattern: "text",
   },
@@ -146,87 +148,221 @@ const patternComponents: Record<string, React.ComponentType> = {
   text: TextPattern,
 };
 
-function ProjectCard({ project }: { project: typeof projects[0] }) {
+function HeroCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: false });
+    if (!ctx) return;
+
+    const orbs: { x: number; y: number; vx: number; vy: number; r: number; color: string; phase: number }[] = [];
+    const colors = ["#a855f7", "#ec4899", "#06b6d4", "#22c55e", "#f97316", "#8b5cf6"];
+    for (let i = 0; i < 6; i++) {
+      orbs.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: 80 + Math.random() * 100,
+        color: colors[i],
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+
+    let frame = 0;
+    let running = true;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const animate = () => {
+      if (!running) return;
+      frame++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      orbs.forEach((orb, i) => {
+        orb.x += orb.vx + Math.sin(frame * 0.008 + orb.phase) * 0.3;
+        orb.y += orb.vy + Math.cos(frame * 0.007 + orb.phase + i) * 0.3;
+        if (orb.x < -orb.r) orb.x = canvas.width + orb.r;
+        if (orb.x > canvas.width + orb.r) orb.x = -orb.r;
+        if (orb.y < -orb.r) orb.y = canvas.height + orb.r;
+        if (orb.y > canvas.height + orb.r) orb.y = -orb.r;
+
+        const g = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+        g.addColorStop(0, orb.color + "28");
+        g.addColorStop(0.5, orb.color + "10");
+        g.addColorStop(1, orb.color + "00");
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      });
+
+      requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      running = false;
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 24, scale: 0.97 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { delay: i * 0.07, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
+  }),
+};
+
+function ProjectCard({ project, index }: { project: typeof projects[0]; index: number }) {
   const Pattern = patternComponents[project.svgPattern];
   return (
-    <Link href={project.href}>
-      <div className="group relative bg-card border border-card-border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30">
-        <div className={`relative h-44 bg-gradient-to-br ${project.gradient} overflow-hidden`}>
-          <div className="absolute inset-0">
-            <Pattern />
+    <motion.div
+      custom={index}
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    >
+      <Link href={project.href}>
+        <div className="group relative bg-card border border-card-border rounded-2xl overflow-hidden cursor-pointer transition-shadow duration-300 hover:shadow-xl hover:border-primary/30">
+          <div className={`relative h-44 bg-gradient-to-br ${project.gradient} overflow-hidden`}>
+            <div className="absolute inset-0">
+              <Pattern />
+            </div>
+            <div className="absolute bottom-4 left-4">
+              <span className="text-4xl">{project.emoji}</span>
+            </div>
           </div>
-          <div className="absolute bottom-4 left-4">
-            <span className="text-4xl">{project.emoji}</span>
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
+                {project.title}
+              </h3>
+              <ArrowRight className="w-4 h-4 text-muted-foreground mt-0.5 transition-transform group-hover:translate-x-1 shrink-0" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{project.description}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {project.tags.map(tag => (
+                <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${project.accent}`}>
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
-              {project.title}
-            </h3>
-            <ArrowRight className="w-4 h-4 text-muted-foreground mt-0.5 transition-transform group-hover:translate-x-0.5 shrink-0" />
-          </div>
-
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            {project.description}
-          </p>
-
-          <div className="flex flex-wrap gap-1.5">
-            {project.tags.map(tag => (
-              <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${project.accent}`}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-6 pt-28 pb-20">
-        <div className="mb-16 max-w-2xl">
-          <div className="flex items-center gap-2 mb-4">
+    <div className="min-h-screen bg-background relative">
+      <div className="max-w-6xl mx-auto px-6 pt-28 pb-20 relative z-10">
+        <div className="relative mb-16 max-w-2xl">
+          <div className="absolute -inset-40 -z-10 overflow-hidden rounded-3xl">
+            <HeroCanvas />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="flex items-center gap-2 mb-4"
+          >
             <Sparkles className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-primary">Creative Studio</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4">
-            Where code meets creativity
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            A collection of interactive experiments, generative art, and creative tools built at the intersection of design and engineering.
-          </p>
+          </motion.div>
 
-          <div className="flex items-center gap-3 mt-8">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.05 }}
+            className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4"
+          >
+            Where code meets creativity
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="text-lg text-muted-foreground leading-relaxed"
+          >
+            A collection of interactive experiments, generative art, and creative tools built at the intersection of design and engineering.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="flex items-center gap-3 mt-8"
+          >
             <Link href="/paint-swirl">
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:opacity-90 transition-opacity">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-md"
+              >
                 <Palette className="w-4 h-4" />
                 Try Paint Swirl
-              </button>
+              </motion.button>
             </Link>
             <Link href="/projects">
-              <button className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl font-medium text-sm hover:bg-secondary/80 transition-colors border border-border">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-secondary-foreground rounded-xl font-medium text-sm hover:bg-secondary/80 transition-colors border border-border"
+              >
                 <Layers className="w-4 h-4" />
                 View All Projects
-              </button>
+              </motion.button>
             </Link>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          className="mb-8"
+        >
           <h2 className="text-xl font-semibold text-foreground">Featured Projects</h2>
           <p className="text-muted-foreground text-sm mt-1">Click any card to explore</p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {projects.map(project => (
-            <ProjectCard key={project.id} project={project} />
+          {projects.map((project, i) => (
+            <ProjectCard key={project.id} project={project} index={i} />
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mt-20 pt-12 border-t border-border flex items-center justify-between text-sm text-muted-foreground"
+        >
+          <span>Built with React · Framer Motion · Canvas API</span>
+          <div className="flex gap-4">
+            <span>9 projects</span>
+            <span>3 pages</span>
+            <span>∞ particles</span>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
