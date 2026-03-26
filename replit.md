@@ -21,7 +21,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── portfolio-site/     # Main portfolio/creative studio site (React + Vite, serves at /)
+│   ├── api-server/         # Express API server
+│   └── mockup-sandbox/     # Design component preview tool (canvas workflow)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -49,6 +51,19 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
 
 ## Packages
+
+### `artifacts/portfolio-site` (`@workspace/portfolio-site`)
+
+React + Vite creative portfolio site. Serves at `/` (root path).
+
+- `src/App.tsx` — Router with wouter, Nav mount, QueryClient provider
+- `src/index.css` — Full HSL design token system (light + dark mode)
+- `src/components/Nav.tsx` — Fixed top nav with active state detection
+- `src/pages/Home.tsx` — Homepage with 6 project cards (SVG-patterned image squares)
+- `src/pages/PaintSwirl.tsx` — Interactive canvas physics paint swirl generator
+- `src/pages/Projects.tsx` — Full project gallery with category filter + text search
+- Features: particle physics system (attractor + curl forces), toroidal wrapping, palette system, canvas save/download
+- No backend API used — static project data, no DB
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
