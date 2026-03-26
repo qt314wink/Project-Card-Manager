@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import { Trash2, Download, Shuffle, Settings2, ChevronDown, ChevronUp, Keyboard } from "lucide-react";
+import { Trash2, Download, Shuffle, Settings2, ChevronDown, ChevronUp, Keyboard, Send, Share2, User, Image, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCreator } from "@/contexts/CreatorContext";
+import { SeoHead } from "@/components/SeoHead";
 
 interface Particle {
   x: number;
@@ -60,6 +62,9 @@ export default function PaintSwirl() {
   const [showKeys, setShowKeys] = useState(false);
   const [mode, setMode] = useState<DrawMode>("swirl");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showGallery, setShowGallery] = useState(false);
+  const [showSubmitPanel, setShowSubmitPanel] = useState(false);
+  const { username, setUsername, artworks, submitArtwork, deleteArtwork, shareItem } = useCreator();
   const paletteRef = useRef(PALETTES[0]);
   const modeRef = useRef<DrawMode>("swirl");
   const particleCountRef = useRef(particleCount);
@@ -348,8 +353,44 @@ export default function PaintSwirl() {
     link.click();
   };
 
+  const handleSubmitArtwork = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (!username.trim()) { setShowSubmitPanel(true); return; }
+    const dataUrl = canvas.toDataURL("image/png");
+    const record = submitArtwork(dataUrl, PALETTES[paletteIdx].name, mode);
+    showToast(`Saved as "${record.title}" by ${username}`);
+    setShowGallery(true);
+  };
+
+  const handleShareCanvas = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        if (navigator.share && navigator.canShare?.({ files: [new File([blob], "studio-art.png", { type: "image/png" })] })) {
+          await navigator.share({
+            title: `Paint Swirl — ${mode}`,
+            text: "Made with Halcyon Minx Studio 🌀",
+            files: [new File([blob], "studio-art.png", { type: "image/png" })],
+          });
+        } else {
+          await shareItem(window.location.href, "Paint Swirl Studio", "Made with Halcyon Minx Studio");
+          showToast("Link copied!");
+        }
+      }, "image/png");
+    } catch {}
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col pt-14">
+    <div className="min-h-screen bg-[#0a0a0f] flex flex-col pt-14 pb-20">
+      <SeoHead
+        title="Paint Swirl Generator"
+        description="Interactive physics-based generative art — create swirling, ink drop, and marble patterns in your browser. Save, share, or submit your creations."
+        path="/paint-swirl"
+        keywords="paint swirl, generative art, canvas physics, interactive art, particle system"
+      />
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-wrap gap-2">
         <div>
           <h1 className="text-white font-semibold text-sm">Paint Swirl Generator</h1>

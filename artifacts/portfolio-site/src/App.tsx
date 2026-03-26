@@ -7,9 +7,14 @@ import Home from "@/pages/Home";
 import PaintSwirl from "@/pages/PaintSwirl";
 import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
+import About from "@/pages/About";
+import Blog from "@/pages/Blog";
 import Nav from "@/components/Nav";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PageTransition } from "@/components/PageTransition";
+import { MusicPlayer } from "@/components/MusicPlayer";
+import { MusicProvider } from "@/contexts/MusicContext";
+import { CreatorProvider } from "@/contexts/CreatorContext";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +24,16 @@ function Router() {
       <Nav />
       <PageTransition>
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/paint-swirl" component={PaintSwirl} />
-          <Route path="/projects" component={Projects} />
-          <Route path="/project/:slug" component={ProjectDetail} />
-          <Route component={NotFound} />
+          <Route path="/"              component={Home}         />
+          <Route path="/paint-swirl"   component={PaintSwirl}   />
+          <Route path="/projects"      component={Projects}     />
+          <Route path="/project/:slug" component={ProjectDetail}/>
+          <Route path="/blog"          component={Blog}         />
+          <Route path="/about"         component={About}        />
+          <Route                       component={NotFound}     />
         </Switch>
       </PageTransition>
+      <MusicPlayer />
     </>
   );
 }
@@ -33,14 +41,18 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
+      <MusicProvider>
+        <CreatorProvider>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </CreatorProvider>
+      </MusicProvider>
     </ThemeProvider>
   );
 }
